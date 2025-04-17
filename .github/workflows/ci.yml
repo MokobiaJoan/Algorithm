@@ -1,34 +1,32 @@
-name: C++ CI
+name: Build & Test
 
-on:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
-
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+        - main
 jobs:
-    build-and-test:
-        runs-on: ubuntu-latest
-        
-        steps:
-            - name: Check out repository
-              uses: actions/checkout@v3
+  build:
+    runs-on: ubuntu-latest
 
-            - name: Install dependencies
-              run: |
-                sudo apt update 
-                sudo apt install -y g++ cmake
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-            - name: Configure CMake
-              run: | 
-                cmake -B build -S . -DCMAKE_CXX_STANDARD=17
+      - name: Install build tools and Google Test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtest-dev
 
-            - name: Build
-              run: |
-                cmake --build build
+          cd /usr/src/googletest && sudo cmake . && sudo make
+          sudo cp /usr/src/googletest/lib/*.a /usr/lib
 
-            - name: Run Tests
-              run: |
-                cd build && ctest --verbose
+      - name: Build the project
+        run: |
+          make
+
+      - name: Clean build files (optional)
+        run: |
+          make clean
