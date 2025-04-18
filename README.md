@@ -7,6 +7,7 @@
 # Contacts
 st135508@student.spbu.ru
 
+
 To build Task 1.1(Decoder):
 
 BUILD: "make"
