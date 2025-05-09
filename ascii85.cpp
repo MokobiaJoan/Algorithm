@@ -7,6 +7,8 @@
 #include <cstdint>
 #include "ascii85.hpp"
 
+namespace ascii85 {
+
 // ENCODE: Convert binary string to ASCII85
 std::string encode_ascii85(const std::string& input) {
     std::string output = "<~";
@@ -43,12 +45,13 @@ std::string encode_ascii85(const std::string& input) {
 // DECODE: Convert ASCII85 string to binary string
 std::string decode_ascii85_to_string(const std::string& input_raw) {
     std::string input = input_raw;
-    if (input.size() >= 2 && input.substr(0, 2) == "<~") {
-    input = input.substr(2);
-}
-if (input.size() >= 2 && input.substr(input.size() - 2) == "~>") {
-    input = input.substr(0, input.size() - 2);
-}
+
+    // Remove <~ and ~> if present
+    if (input.substr(0, 2) == "<~") input = input.substr(2);
+    if (input.size() >= 2 && input.substr(input.size() - 2) == "~>") {
+        input = input.substr(0, input.size() - 2);
+    }
+
     std::vector<char> group;
     std::string output;
     uint32_t value = 0;
@@ -62,7 +65,9 @@ if (input.size() >= 2 && input.substr(input.size() - 2) == "~>") {
             continue;
         }
 
-        if (ch < '!' || ch > 'u') throw std::runtime_error("Invalid character in ASCII85");
+        if (ch < '!' || ch > 'u') {
+            throw std::runtime_error("Invalid character in ASCII85");
+        }
 
         group.push_back(ch);
         if (group.size() == 5) {
@@ -76,6 +81,7 @@ if (input.size() >= 2 && input.substr(input.size() - 2) == "~>") {
         }
     }
 
+    // Handle remaining characters (padding)
     if (!group.empty()) {
         int padding = 5 - group.size();
         for (int i = 0; i < padding; ++i)
@@ -92,3 +98,5 @@ if (input.size() >= 2 && input.substr(input.size() - 2) == "~>") {
 
     return output;
 }
+
+} // namespace ascii85
