@@ -1,30 +1,33 @@
-// MAIN: Command-line interface
-#include <iostream>
 #include "ascii85.hpp"
+#include <iostream>
+#include <vector>
+#include <string>
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: ./ascii85 <-e|-d> <text>" << std::endl;
+    if (argc != 2 || (std::string(argv[1]) != "-e" && std::string(argv[1]) != "-d")) {
+        std::cerr << "Usage: " << argv[0] << " -e | -d\n";
         return 1;
     }
 
-    std::string mode = argv[1];
-    std::string data = argv[2];
+    std::vector<uint8_t> inputBytes;
+    std::string inputText;
+    char ch;
 
-    if (mode == "-e") {
-        std::string encoded = ascii85::encode_ascii85(data);
-        std::cout << encoded << std::endl;
-    } else if (mode == "-d") {
-        try {
-            std::string decoded =ascii85::decode_ascii85_to_string(data);
-            std::cout << decoded << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "Decode error: " << e.what() << std::endl;
-            return 1;
-        }
+    // Read input from stdin
+    while (std::cin.get(ch)) {
+        inputBytes.push_back(static_cast<uint8_t>(ch));
+        inputText += ch;
+    }
+
+    if (std::string(argv[1]) == "-e") {
+        std::string encoded = encodeAscii85(inputBytes);
+        std::cout << encoded << std::endl; // clean output
     } else {
-        std::cerr << "Unknown mode: " << mode << std::endl;
-        return 1;
+        std::vector<uint8_t> decoded = decodeAscii85(inputText);
+        for (uint8_t byte : decoded) {
+            std::cout << static_cast<char>(byte);
+        }
+        std::cout << std::endl; // newline after decoded output
     }
 
     return 0;

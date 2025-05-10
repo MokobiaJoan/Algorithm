@@ -1,99 +1,86 @@
-#include <iostream>
+#include "ascii85.hpp"
 #include <vector>
 #include <string>
-#include <sstream>
+#include <cstdint>
 #include <stdexcept>
 #include <cctype>
-#include <cstdint>
-#include "ascii85.hpp"
 
-namespace ascii85 {  // <<<<<<<<<<<<<<<<<<<<<<<< BEGIN NAMESPACE
+std::string encodeBlock(const uint8_t* block, size_t length) {
+    uint32_t value = 0;
+    for (size_t i = 0; i < length; ++i)
+        value |= block[i] << (24 - 8 * i);
 
-// ENCODE: Convert binary string to ASCII85
-std::string encode_ascii85(const std::string& input) {
-    std::string output = "<~";
-    size_t i = 0;
+    if (length == 4 && value == 0) return "z";
 
-    while (i < input.size()) {
-        uint32_t chunk = 0;
-        int len = 0;
+    char encoded[5];
+    for (size_t i = length; i < 4; ++i)
+        value |= 0 << (24 - 8 * i);
 
-        for (int j = 0; j < 4; ++j) {
-            chunk <<= 8;
-            if (i < input.size()) {
-                chunk |= static_cast<unsigned char>(input[i++]);
-                ++len;
-            }
-        }
-
-        if (chunk == 0 && len == 4) {
-            output += 'z';
-        } else {
-            char encoded[5];
-            for (int j = 4; j >= 0; --j) {
-                encoded[j] = static_cast<char>(chunk % 85 + 33);
-                chunk /= 85;
-            }
-            output.append(encoded, encoded + len + 1);
-        }
+    for (int i = 4; i >= 0; --i) {
+        encoded[i] = (value % 85) + 33;
+        value /= 85;
     }
 
-    output += "~>";
-    return output;
+    return std::string(encoded, length < 4 ? length + 1 : 5);
 }
 
-// DECODE: Convert ASCII85 string to binary string
-std::string decode_ascii85_to_string(const std::string& input_raw) {
-    std::string input = input_raw;
-    if (input.size() >= 2 && input.substr(0, 2) == "<~") {
-        input = input.substr(2);
+std::string encodeAscii85(const std::vector<uint8_t>& data) {
+    std::string result = "<~";
+    for (size_t i = 0; i < data.size(); i += 4) {
+        size_t len = std::min<size_t>(4, data.size() - i);
+        result += encodeBlock(&data[i], len);
     }
-    if (input.size() >= 2 && input.substr(input.size() - 2) == "~>") {
-        input = input.substr(0, input.size() - 2);
-    }
+    result += "~>";
+    return result;
+}
 
-    std::vector<char> group;
-    std::string output;
-    uint32_t value = 0;
+std::vector<uint8_t> decodeAscii85(const std::string& input) {
+    std::vector<uint8_t> output;
+    std::vector<uint32_t> group;
+    bool started = false;
 
-    for (char ch : input) {
-        if (std::isspace(static_cast<unsigned char>(ch))) continue;
+    for (size_t i = 0; i < input.size(); ++i) {
+        char ch = input[i];
 
-        if (ch == 'z') {
-            if (!group.empty()) throw std::runtime_error("'z' inside group");
-            output.append(4, '\0');
+        if (!started) {
+            if (ch == '<' && i + 1 < input.size() && input[i + 1] == '~') {
+                started = true;
+                ++i;
+            }
             continue;
         }
 
-        if (ch < '!' || ch > 'u') throw std::runtime_error("Invalid character in ASCII85");
+        if (ch == '~' && i + 1 < input.size() && input[i + 1] == '>') break;
+        if (isspace(ch)) continue;
 
-        group.push_back(ch);
+        if (ch == 'z') {
+            if (!group.empty()) throw std::runtime_error("Invalid 'z' inside a group");
+            output.insert(output.end(), {0, 0, 0, 0});
+            continue;
+        }
+
+        if (ch < '!' || ch > 'u') continue;
+
+        group.push_back(ch - 33);
         if (group.size() == 5) {
-            value = 0;
-            for (char c : group) {
-                value = value * 85 + (c - 33);
-            }
-            for (int i = 3; i >= 0; --i)
-                output += static_cast<char>((value >> (i * 8)) & 0xFF);
+            uint32_t val = 0;
+            for (int j = 0; j < 5; ++j) val = val * 85 + group[j];
+            output.push_back((val >> 24) & 0xFF);
+            output.push_back((val >> 16) & 0xFF);
+            output.push_back((val >> 8) & 0xFF);
+            output.push_back(val & 0xFF);
             group.clear();
         }
     }
 
     if (!group.empty()) {
-        int padding = 5 - group.size();
-        for (int i = 0; i < padding; ++i)
-            group.push_back('u');
-
-        value = 0;
-        for (char c : group)
-            value = value * 85 + (c - 33);
-
-        for (int i = 3; i >= 0; --i)
-            if (i >= padding)
-                output += static_cast<char>((value >> (i * 8)) & 0xFF);
+        size_t len = group.size();
+        for (size_t i = len; i < 5; ++i) group.push_back(84);
+        uint32_t val = 0;
+        for (int i = 0; i < 5; ++i) val = val * 85 + group[i];
+        for (size_t i = 0; i < len - 1; ++i)
+            output.push_back((val >> (24 - 8 * i)) & 0xFF);
     }
 
     return output;
 }
-
-} // <<<<<<<<<<<<<<<<<<<<<<<< END NAMESPACE
