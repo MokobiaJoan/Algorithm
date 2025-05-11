@@ -42,26 +42,40 @@ std::vector<uint8_t> decodeAscii85(const std::string& input) {
     for (size_t i = 0; i < input.size(); ++i) {
         char ch = input[i];
 
+        // Check for the start marker <~
         if (!started) {
             if (ch == '<' && i + 1 < input.size() && input[i + 1] == '~') {
                 started = true;
-                ++i;
+                ++i; 
+            } else if (!isspace(static_cast<unsigned char>(ch))) {
+                throw std::runtime_error("Missing opening <~ marker");
             }
             continue;
         }
 
-        if (ch == '~' && i + 1 < input.size() && input[i + 1] == '>') break;
-        if (isspace(ch)) continue;
+    
+        if (ch == '~' && i + 1 < input.size() && input[i + 1] == '>') {
+            i++; 
+            break;
+        }
 
+        
+        if (isspace(static_cast<unsigned char>(ch))) continue;
+
+        
         if (ch == 'z') {
             if (!group.empty()) throw std::runtime_error("Invalid 'z' inside a group");
             output.insert(output.end(), {0, 0, 0, 0});
             continue;
         }
 
-        if (ch < '!' || ch > 'u') continue;
+        if (ch < '!' || ch > 'u') {
+            throw std::runtime_error("Invalid character in ASCII85 input");
+        }
 
         group.push_back(ch - 33);
+
+        
         if (group.size() == 5) {
             uint32_t val = 0;
             for (int j = 0; j < 5; ++j) val = val * 85 + group[j];
@@ -73,13 +87,19 @@ std::vector<uint8_t> decodeAscii85(const std::string& input) {
         }
     }
 
+    
     if (!group.empty()) {
         size_t len = group.size();
-        for (size_t i = len; i < 5; ++i) group.push_back(84);
+        for (size_t i = len; i < 5; ++i) group.push_back(84);  
         uint32_t val = 0;
         for (int i = 0; i < 5; ++i) val = val * 85 + group[i];
         for (size_t i = 0; i < len - 1; ++i)
             output.push_back((val >> (24 - 8 * i)) & 0xFF);
+    }
+
+    
+    if (!started) {
+        throw std::runtime_error("No ASCII85 start marker found");
     }
 
     return output;
