@@ -13,10 +13,11 @@ To build Task 1.1(Decoder):
 BUILD: "make"
 
 
-RUN PROGRAM: ./ascii85 -e < input >
+RUN PROGRAM: echo -n "input" | ./ascii85 -e
+             
+             echo -n "-e result" | ./ascii85 -d   
+             
 
-             ./ascii85 -d < "-e result" >
-
-RUN TEST: ./test_ascii85
+RUN TEST(c++): ./test_ascii85
 
 CLEAN BUILD FILES: make clean
