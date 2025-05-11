@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
             for (uint8_t byte : decoded) {
                 std::cout << static_cast<char>(byte);
             }
-            std::cout << std::endl;
+            
             
         } catch (const std::exception& e) {
             std::cerr << "Decoding failed: " << e.what() << std::endl;

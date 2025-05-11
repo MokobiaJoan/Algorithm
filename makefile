@@ -33,10 +33,10 @@ $(TEST_BIN): $(OBJS) $(TEST_OBJ)
 clean:
 	rm -f *.o $(BIN) $(TEST_BIN)
 
-#test_all: $(TEST_BIN)
-#		./$(TEST_BIN)
-#		python3 test_random.py
+test_all: $(TEST_BIN)
+		./$(TEST_BIN)
+		python3 test_random.py
 	
-#test-python:
-#	python3 test_random.py	
+test-python:
+	python3 test_random.py	
 
