@@ -20,4 +20,6 @@ RUN PROGRAM: echo -n "input" | ./ascii85 -e
 
 RUN TEST(c++): ./test_ascii85
 
+RUN TEST(C++ & PYTHON): make test_all
+
 CLEAN BUILD FILES: make clean

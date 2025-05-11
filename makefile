@@ -35,8 +35,8 @@ clean:
 
 test_all: $(TEST_BIN)
 		./$(TEST_BIN)
-		python3 test_random.py
+		python3 test_decode.py
 	
 test-python:
-	python3 test_random.py	
+	python3 test_decode.py	
 
