@@ -18,6 +18,7 @@ Note: There is already an input file in the project.
 BUILD: "make"
 
 RUN PROGRAM: 
-        ./shannon_encode
+        ./shannon_encoder
+        ./shannon_decoder
 
 CLEAN BUILD FILES: make clean
